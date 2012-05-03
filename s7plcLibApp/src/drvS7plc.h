@@ -1,8 +1,8 @@
-/* $Author: saa $ */ 
-/* $Date: 2010/11/17 10:40:35 $ */ 
-/* $Id: drvS7plc.h,v 1.1.1.1 2010/11/17 10:40:35 saa Exp $ */  
+/* $Author: zimoch $ */ 
+/* $Date: 2005/03/11 15:16:13 $ */ 
+/* $Id: drvS7plc.h,v 1.3 2005/03/11 15:16:13 zimoch Exp $ */  
 /* $Name:  $ */ 
-/* $Revision: 1.1.1.1 $ */ 
+/* $Revision: 1.3 $ */ 
 
 #ifndef drvS7plc_h
 #define drvS7plc_h

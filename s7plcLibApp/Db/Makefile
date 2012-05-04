@@ -11,6 +11,12 @@ include $(TOP)/configure/CONFIG
 # Create and install (or just install) into <top>/db
 # databases, templates, substitutions like this
 #DB += xxx.db
+DB += pps_s7plc_ai.template
+DB += pps_s7plc_bi.template
+DB += pps_s7plc_bo.template
+DB += pps_s7plc_longin.template
+
+
 
 #----------------------------------------------------
 # If <anyname>.db template is not named <anyname>*.template add

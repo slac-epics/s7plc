@@ -1,0 +1,6 @@
+record(longin, "$(dtype):$(area):$(position):$(attribute)") {
+  field(DESC, "$(description)")
+  field(SCAN, "I/O Intr")
+  field(DTYP, "S7plc")
+  field(INP,  "@$(plc)/$(byte_offset) T=$(data_type)")
+}

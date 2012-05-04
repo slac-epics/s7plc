@@ -1,0 +1,10 @@
+record(bi, "$(dtype):$(area):$(position):$(attribute)") {
+  field(DESC, "$(description)")
+  field(SCAN, "I/O Intr")
+  field(DTYP, "S7plc")
+  field(INP,  "@$(plc)/$(byte_offset) T=$(data_type) B=$(bit)")
+  field(ZNAM, "$(zname)")
+  field(ONAM, "$(oname)")
+  field(ZSV,  "$(zsv)")
+  field(OSV,  "$(osv)")
+}

@@ -17,13 +17,11 @@ SCRIPTS_Linux += server.tcl
 # ============================================
 LIBRARY_IOC += s7plcLib
 
-
 # s7plcLib.dbd will be installed
 DBD += s7plcLib.dbd
 
-
 # s7plcLib_registerRecordDeviceDriver.cpp derives from s7plcLib.dbd
-s7plcLib_SRCS += s7plcLib_registerRecordDeviceDriver.cpp
+#s7plcLib_SRCS += s7plcLib_registerRecordDeviceDriver.cpp
 
 # Library Source files
 s7plcLib_SRCS += drvS7plc.c

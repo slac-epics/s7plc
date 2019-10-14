@@ -2328,7 +2328,7 @@ STATIC long s7plcReadWaveform(waveformRecord *record)
     return status;
 }
 
-#if (EPICS_REVISION>=14)
+#if (EPICS_REVISION>=14 || EPICS_VERSION>3)
 /* calcout **********************************************************/
 
 STATIC long s7plcInitRecordCalcout(calcoutRecord *record)

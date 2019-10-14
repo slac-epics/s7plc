@@ -261,7 +261,7 @@ int s7plcConfigure(char *name, char* IPaddr, int port, int inSize, int outSize, 
     return 0;
 }
 
-#if (EPICS_REVISION>=14)
+#if (EPICS_REVISION>=14 || EPICS_VERSION>3)
 static const iocshArg s7plcConfigureArg0 = { "name", iocshArgString };
 static const iocshArg s7plcConfigureArg1 = { "IPaddr", iocshArgString };
 static const iocshArg s7plcConfigureArg2 = { "IPport", iocshArgInt };

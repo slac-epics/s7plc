@@ -15,6 +15,9 @@
 #
 #==============================================================
 #
+
+R1.1.2: 4-Apr-2022 Shantha Condamoor: Added support for synchronization of s7plc receive frames
+                   Changes only to s7plcLibApp/src/drvS7plc.c
 R1.1.1: change epics version check to build with epics 7
 R1.1.0: First version with Git Workflow.
 

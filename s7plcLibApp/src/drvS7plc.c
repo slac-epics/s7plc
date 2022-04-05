@@ -351,14 +351,14 @@ int s7plcReadArray(
         station->name, offset, nelem);
        return S_drv_badParam;
     }
-    s7plcDebugLog(4,
+    s7plcDebugLog(7,
         "s7plcReadArray (station=%p, offset=%u, dlen=%u, nelem=%u)\n",
         station, offset, dlen, nelem);
     epicsMutexMustLock(station->mutex);
     connStatus = station->connStatus;
     for (elem = 0; elem < nelem; elem++)
     {
-        s7plcDebugLog(5, "data in:");
+        s7plcDebugLog(7, "data in:");
         for (i = 0; i < dlen; i++)
         {
             if (station->swapBytes)
@@ -366,9 +366,9 @@ int s7plcReadArray(
             else
                 byte = station->inBuffer[offset + elem*dlen + i];
             ((char*)data)[elem*dlen+i] = byte;
-            s7plcDebugLog(5, " %02x", byte);
+            s7plcDebugLog(7, " %02x", byte);
         }
-        s7plcDebugLog(5, "\n");
+        s7plcDebugLog(7, "\n");
     }    
     epicsMutexUnlock(station->mutex);
     if (!connStatus) return S_drv_noConn;
@@ -518,7 +518,7 @@ void s7plcMain ()
                     station->name, threadname);
                 station->sendThread = epicsThreadCreate(
                     threadname,
-                    epicsThreadPriorityMedium,
+                    epicsThreadPriorityLow,
                     epicsThreadGetStackSize(epicsThreadStackBig),
                     (EPICSTHREADFUNC)s7plcSendThread,
                     station);
@@ -547,7 +547,7 @@ void s7plcMain ()
                     station->name, threadname);
                 station->recvThread = epicsThreadCreate(
                     threadname,
-                    epicsThreadPriorityMedium,
+                    epicsThreadPriorityHigh,
                     epicsThreadGetStackSize(epicsThreadStackBig),
                     (EPICSTHREADFUNC)s7plcReceiveThread,
                     station);
@@ -619,10 +619,14 @@ STATIC void s7plcSendThread (s7plcStation* station)
 STATIC void s7plcReceiveThread (s7plcStation* station)
 {
     char*  recvBuf = callocMustSucceed(2, station->inSize, "s7plcReceiveThread");
+	
+	epicsTimeStamp then, now;
 
-    s7plcDebugLog(1, "s7plcReceiveThread %s: started\n",
-            station->name);
+	double          diffms = 0.0;
+	float		   poll_time = 0.1;	/* 100 mSec*/
 
+    s7plcDebugLog(6, "s7plcReceiveThread %s: started\n", station->name);
+		
     while (1)
     {
         int input;
@@ -636,30 +640,50 @@ STATIC void s7plcReceiveThread (s7plcStation* station)
         while (station->socket != -1 && input < station->inSize)
         {
             /* Don't lock here! We need to be able to send while we wait */
-            s7plcDebugLog(3,
+            /* s7plcDebugLog(3,
                 "s7plcReceiveThread %s: waiting for input for %g seconds\n",
-                station->name, timeout);
+                station->name, timeout); */
+
+			epicsTimeGetCurrent( &then );	
+						
             status = s7plcWaitForInput(station, timeout);
-            epicsMutexMustLock(station->io);
+            epicsMutexMustLock(station->io);				
+			
             if (status > 0)
             {
                 /* data available; read data from server plc */
                 received = recv(station->socket, recvBuf+input, station->inSize-input, 0);
-                s7plcDebugLog(3,
+				
+				epicsTimeGetCurrent( &now );
+				
+				diffms = (double)(epicsTimeDiffInSeconds( &now, &then ) * 1000.);					
+                /* s7plcDebugLog(3,
                     "s7plcReceiveThread %s: received %d bytes\n",
-                    station->name, received);
-                if (received <= 0)
-                {
-                    s7plcDebugLog(0,
+                    station->name, received); */
+				if ((diffms > timeout*1000.) && (received <= 0)) {
+
+                	/* plc send timeout but no bytes received */
+                    	s7plcDebugLog(0,
                         "s7plcReceiveThread %s: recv(%d, ..., %d, 0) failed\n",
                         station->name,
-                        station->socket, station->inSize-input);
+                        station->socket, station->inSize-input); 
                     s7plcCloseConnection(station);
                     epicsMutexUnlock(station->io);
                     break;
                 }
+
+				/* 1 second has not elapsed and bytes are being received */
                 input += received;
+				
+				if (diffms > (timeout*1000./2.)) {
+					/* 1 second has elapsed */
+					input = received;	
+					s7plcDebugLog(6,">>> Frame Start: station->socket: %d received: %d input = %d status: %d diffms: %f\n", station->socket, received, input, status, diffms);										
+				}						
+																			
+				s7plcDebugLog(6,"station->socket: %d input = %d status: %d diffms: %f\n", station->socket, input, status, diffms);							
             }
+			
             if (input > station->inSize)
             {
                 /* input complete, check for excess bytes */
@@ -684,28 +708,34 @@ STATIC void s7plcReceiveThread (s7plcStation* station)
                 break;
             }
             epicsMutexUnlock(station->io);
-/*            timeout = (input < station->inSize)? 0.1 : 0.0; */
+/*            timeout = (input < station->inSize)? 0.1 : 0.0; */	
         }
-        if (station->socket != -1)
+	
+        if ((station->socket != -1) && (diffms <= 1000.))
         {
             epicsMutexMustLock(station->mutex);
             memcpy(station->inBuffer, recvBuf, station->inSize);
             station->connStatus = 1;
             epicsMutexUnlock(station->mutex);
             /* notify all "I/O Intr" input records */
-            s7plcDebugLog(3,
+            /*s7plcDebugLog(3,
                 "s7plcReceiveThread %s: receive successful, notify all input records\n",
-                station->name);
+                station->name); */
             scanIoRequest(station->inScanPvt);
         }
-        else
-        {
-            s7plcDebugLog(3,
+        /* else
+        {*/
+            /*s7plcDebugLog(3,
                 "s7plcReceiveThread %s: connection down, sleeping %g seconds\n",
-                station->name, station->recvTimeout/4);
+                station->name, station->recvTimeout/4); */
             /* lost connection. Wait some time */
-            epicsThreadSleep(station->recvTimeout/4);
-        }
+        /*    epicsThreadSleep(station->recvTimeout/4);
+        }*/
+		
+		epicsTimeGetCurrent( &now );
+
+		diffms = (double)(epicsTimeDiffInSeconds( &now, &then ) * 1000.);			
+		s7plcDebugLog(6,"station->socket: %d received: %d  input = %d status: %d diffms: %f\n", station->socket, received, input, status, diffms);						
     }
 }
 
@@ -736,9 +766,10 @@ STATIC int s7plcWaitForInput(s7plcStation* station, double timeout)
     }
     if (iSelect==0 && timeout > 0)            /* timed out */
     {
-        s7plcDebugLog(0,
+/*        s7plcDebugLog(0,
             "s7plcWaitForInput %s: select(%d, %f sec) timed out\n",
             station->name, station->socket, timeout);
+*/			
         errno = ETIMEDOUT;
     }
     return iSelect;
